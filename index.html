@@ -1,0 +1,82 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OKX Coin Trading</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Layout 1: API key input -->
+    <div id="layout1">
+        <input type="text" id="apiKey" placeholder="Enter API Key">
+        <input type="text" id="secretKey" placeholder="Enter Secret Key">
+        <input type="password" id="passphrase" placeholder="Enter Passphrase">
+        <button id="saveApiKey">Save</button>
+		<button id="saveAsApiKey">Save As</button>
+		<button id="loadApiKey">Load</button>
+		<input type="file" id="fileInput" style="display: none;">
+    </div>
+
+	<div id="layout2">
+        <h2>OKX Token Price Checker</h2>
+        <!-- Input for token name -->
+        <input type="text" id="tokenName" placeholder="Enter token name (e.g., BTC-USDT)">
+        <p>Current Price: <span id="tokenPrice">-</span></p>
+    </div>
+    <!-- Layout : Order Table -->
+    <div id="layout3">
+		<h2>Order table</h2>
+		<button id="clearOrderTable">Clear</button>
+        <button id="addOrderRow">Add</button>
+        <button id="saveAsOrderTable">Save as</button>
+		<input type="file" id="loadOrderTable" accept="application/json" />
+        <table id="orderTable">
+            <thead>
+                <tr>
+					<th>Order</th>
+					<th>Logic</th>
+                    <th>Target Price</th>
+                    <th>tdMode</th>
+                    <th>Side</th>
+                    <th>OrdType</th>
+                    <th>Sz</th>
+					<th>tgtCcy</th>
+                    <th>Del</th>
+                    <th>Act</th>
+                </tr>
+            </thead>
+            <tbody id="orderTableBody">
+				<!-- Data rows will be added dynamically -->
+			</tbody>
+        </table>
+    </div>
+	<!-- Layout 4: Low Price Table -->
+    <div id="layout4">
+		<h2>Condition table</h2>
+		<button id="clearLowTable">Clear</button>
+        <button id="addLowRow">Add</button>
+		<button id="saveAsLowTable">Save as</button>
+		<input type="file" id="loadLowTable" accept="application/json" />
+        <table id="LowTable">
+            <thead>
+                <tr>
+					<th>Order</th>
+					<th>Logic</th>
+                    <th>Target Price</th>
+                    <th>tdMode</th>
+                    <th>Side</th>
+                    <th>OrdType</th>
+                    <th>Sz</th>
+					<th>tgtCcy</th>
+                    <th>Del</th>
+                    <th>Act</th>
+                </tr>
+            </thead>
+            <tbody>
+				<!-- Data rows will be added dynamically -->
+			</tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
