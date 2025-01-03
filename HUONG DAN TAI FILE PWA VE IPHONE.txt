@@ -1,0 +1,97 @@
+Dưới đây là hướng dẫn cụ thể và chi tiết để triển khai ứng dụng trực tuyến bằng GitHub Pages:
+
+1. Đăng nhập vào GitHub
+Mở trình duyệt và vào GitHub.
+Đăng nhập bằng tài khoản của bạn.
+2. Truy cập Repository của bạn
+Sau khi đăng nhập, vào trang repository của bạn:
+https://github.com/1349blue/OKXtrade.
+3. Mở tab Settings
+Trên trang repository:
+Nhìn phía trên (gần tab Code), bạn sẽ thấy các tab: Code, Issues, Pull requests, Actions, v.v.
+Nhấp vào tab Settings.
+4. Cấu hình GitHub Pages
+Trong Settings, cuộn xuống cho đến khi bạn thấy mục Pages ở menu bên trái (trong phần Code and automation).
+
+Nhấp vào Pages.
+Ở phần Source:
+
+Chọn nhánh (Branch): main.
+Ở menu thả xuống kế bên, chọn / (root) (thư mục gốc).
+Nhấn nút Save để lưu lại cấu hình.
+
+5. Hoàn tất thiết lập
+Sau khi lưu, GitHub sẽ tự động triển khai repository của bạn lên GitHub Pages.
+Cuộn lên đầu trang, bạn sẽ thấy thông báo kiểu:
+"Your site is live at https://1349blue.github.io/OKXtrade/".
+6. Truy cập ứng dụng
+Mở trình duyệt và nhập đường dẫn:
+arduino
+Copy code
+https://1349blue.github.io/OKXtrade/
+7. Kiểm tra ứng dụng
+Đảm bảo các tệp HTML, CSS, JS đã được tải đúng.
+Kiểm tra các tính năng:
+Nếu ứng dụng không hoạt động như mong đợi, kiểm tra file index.html và các liên kết CSS, JS trong đó (chúng cần sử dụng đường dẫn tương đối).
+8. (Tuỳ chọn) Tuỳ chỉnh URL
+Nếu muốn URL dễ nhớ hơn (không chứa "github.io"), bạn có thể:
+
+Mua tên miền tùy chỉnh (ví dụ: từ Namecheap, Google Domains).
+Liên kết GitHub Pages với tên miền của bạn bằng cách thêm file CNAME.
+
+Để chuyển một repository từ Private sang Public trên GitHub, bạn làm theo các bước sau:
+
+Bước 1: Truy cập Repository trên GitHub
+Mở trình duyệt và đi tới repository của bạn (ví dụ: https://github.com/1349blue/OKXtrade).
+Bước 2: Mở phần Settings
+Trên trang của repository, nhấn vào tab Settings (có ở menu trên cùng của repository).
+Bước 3: Chuyển đổi từ Private sang Public
+Trong phần Danger Zone ở cuối trang Settings:
+
+Bạn sẽ thấy mục Change repository visibility.
+Nhấn vào nút Change visibility.
+Trong hộp thoại xác nhận, chọn Public và nhấn I understand the consequences, change repository visibility để hoàn tất.
+
+Bước 4: Kiểm tra lại
+Sau khi thay đổi, repository của bạn sẽ trở thành Public và mọi người có thể truy cập và xem mã nguồn của bạn mà không cần phải có quyền truy cập riêng.
+Lưu ý rằng khi repository chuyển sang Public, tất cả dữ liệu trong repository sẽ có sẵn công khai cho mọi người. Hãy chắc chắn rằng bạn không chứa thông tin nhạy cảm trong đó trước khi làm điều này.
+
+Hy vọng bạn sẽ chuyển đổi thành công!
+
+Để tải về và sử dụng ứng dụng của bạn như một Progressive Web App (PWA) sau khi đã triển khai trực tuyến, bạn có thể cài đặt ứng dụng PWA vào iPhone hoặc Android. Đây là cách thức hoạt động của PWA, cho phép người dùng cài đặt ứng dụng mà không cần qua App Store hoặc Google Play. Dưới đây là cách để làm điều đó:
+
+1. Cài đặt PWA trên iPhone
+PWA có thể được cài đặt trên màn hình chính của iPhone từ trình duyệt Safari. Đây là các bước cụ thể:
+
+Mở Safari và truy cập vào ứng dụng của bạn từ GitHub Pages (ví dụ: https://1349blue.github.io/OKXtrade/).
+
+Khi trang web của bạn đã tải xong, nhấn vào biểu tượng Chia sẻ (Share) ở dưới cùng của màn hình (biểu tượng hình vuông với mũi tên hướng lên).
+
+Trong menu Chia sẻ, kéo xuống và tìm tùy chọn Add to Home Screen (Thêm vào Màn hình chính).
+
+Nhấn vào Add (Thêm) ở góc trên bên phải để thêm ứng dụng vào màn hình chính của bạn.
+
+Ứng dụng sẽ xuất hiện trên màn hình chính của iPhone dưới dạng một biểu tượng như ứng dụng bình thường.
+
+2. Cài đặt PWA trên Android
+Trình duyệt Chrome trên Android hỗ trợ cài đặt PWA trực tiếp vào màn hình chính. Làm theo các bước sau:
+
+Mở Chrome trên điện thoại Android và truy cập vào ứng dụng của bạn từ GitHub Pages (ví dụ: https://1349blue.github.io/OKXtrade/).
+
+Nhấn vào menu ba chấm ở góc trên bên phải của màn hình để mở menu tùy chọn.
+
+Tìm và chọn Add to Home screen (Thêm vào Màn hình chính).
+
+Bạn sẽ được yêu cầu nhập tên cho ứng dụng, sau đó nhấn Add (Thêm).
+
+Biểu tượng của ứng dụng sẽ xuất hiện trên màn hình chính của Android và bạn có thể mở ứng dụng như một ứng dụng bình thường.
+
+3. Đảm bảo PWA Hoạt Động Tốt
+Để ứng dụng của bạn hoạt động như một PWA tốt nhất, hãy đảm bảo các điều sau:
+
+HTTPS: Ứng dụng cần chạy trên giao thức HTTPS để PWA hoạt động đúng.
+Service Worker: Đảm bảo bạn đã cài đặt service worker trong ứng dụng của mình để ứng dụng có thể hoạt động offline và hỗ trợ các tính năng như cache và thông báo đẩy (push notifications).
+Web App Manifest: Đảm bảo bạn đã cấu hình web app manifest đúng cách với các biểu tượng và cài đặt cho PWA.
+Sau khi thực hiện các bước trên, người dùng có thể mở ứng dụng của bạn từ màn hình chính mà không cần truy cập lại vào trình duyệt.
+
+Hy vọng những hướng dẫn này sẽ giúp bạn sử dụng ứng dụng của mình như một PWA trên thiết bị di động!
