@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
+	
 	//đăng ký Service Worker:
 	if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -12,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     });
 	}
+	
     const apiKeyInput = document.getElementById("apiKey");
     const secretKeyInput = document.getElementById("secretKey");
     const passphraseInput = document.getElementById("passphrase");
@@ -33,10 +35,46 @@ document.addEventListener("DOMContentLoaded", function() {
     const saveAsLowTableButton = document.getElementById("saveAsLowTable");
     const loadLowTableInput = document.getElementById("loadLowTable");
 
+    const clearTargetTableButton = document.getElementById("clearTargetTable");
+    const addTargetRowButton = document.getElementById("addTargetRow");
+    const saveAsTargetTableButton = document.getElementById("saveAsTargetTable");
+    const loadTargetTableInput = document.getElementById("loadTargetTable");
+
 	let tokenName = '';
     let varTokenPrice = 0;
     let orders = [];
     let conditions = [];
+	let updateInterval = 2000; // Default interval
+
+    // Thêm biến toàn cục để theo dõi trạng thái của toggle
+    let isTradeEnabled = false;
+	let priceUpdateTimer = null;
+    // Thêm hàm để bắt đầu/dừng vòng lặp
+    function toggleTrading() {
+        isTradeEnabled = tradingCheckbox.checked; // Cập nhật trạng thái từ checkbox
+        
+        if (isTradeEnabled) {
+            // Bắt đầu vòng lặp khi enabled = true
+            priceUpdateTimer = setInterval(() => {
+                updateTokenPrice();
+                checkConditions(); 
+            }, updateInterval);
+            showAlert("Trading enabled");
+        } else {
+            // Dừng vòng lặp khi enabled = false 
+            if (priceUpdateTimer) {
+                clearInterval(priceUpdateTimer);
+                priceUpdateTimer = null;
+            }
+            showAlert("Trading disabled");
+        }
+    }
+
+    // Thêm event listener cho checkbox
+    const tradingCheckbox = document.getElementById("toggleSwitch");
+    tradingCheckbox.addEventListener("change", (e) => {
+        toggleTrading();
+    });
 
     // Save API keys to global variables
     function saveApiKey() {
@@ -240,68 +278,72 @@ document.addEventListener("DOMContentLoaded", function() {
 	// Add row to condition table
 	function addLowRow() {
 		const lowTableBody = document.querySelector("#LowTable tbody");
-        const row = document.createElement("tr");
+		const currentRows = lowTableBody.rows.length;
+		const newOrder = Math.floor(currentRows / 2) + 1;
 
-		// Define options for the select elements
-		const options0 = ['market', 'limit'];
-		const options1 = ['buy', 'sell'];
-		const options2 = ['base_ccy', 'quote_ccy'];
+		// Tạo 2 hàng mới
+		for (let i = 0; i < 2; i++) {
+			const row = document.createElement("tr");
+			
+			// Define options for the select elements
+			const options0 = ['market', 'limit'];
+			const options1 = ['buy', 'sell'];
+			const options2 = ['base_ccy', 'quote_ccy'];
 
-		// Create select elements for the 'tgtCcy' columns
-		const select0 = document.createElement("select");
-		const select1 = document.createElement("select");
-		const select2 = document.createElement("select");
-		
-		// Populate select0 with options1
-		options0.forEach(option => {
-			const opt0 = document.createElement("option");
-			opt0.value = option; // Correctly assign option value
-			opt0.textContent = option; // Correctly assign option display text
-			select0.appendChild(opt0);
-		});
+			// Create select elements
+			const select0 = document.createElement("select");
+			const select1 = document.createElement("select");
+			const select2 = document.createElement("select");
+			
+			// Populate selects
+			options0.forEach(option => {
+				const opt0 = document.createElement("option");
+				opt0.value = option;
+				opt0.textContent = option;
+				select0.appendChild(opt0);
+			});
 
-		// Populate select1 with options1
-		options1.forEach(option => {
-			const opt1 = document.createElement("option");
-			opt1.value = option; // Correctly assign option value
-			opt1.textContent = option; // Correctly assign option display text
-			select1.appendChild(opt1);
-		});
+			options1.forEach(option => {
+				const opt1 = document.createElement("option");
+				opt1.value = option;
+				opt1.textContent = option;
+				select1.appendChild(opt1);
+			});
 
-		// Populate select2 with options2
-		options2.forEach(option => {
-			const opt2 = document.createElement("option");
-			opt2.value = option; // Correctly assign option value
-			opt2.textContent = option; // Correctly assign option display text
-			select2.appendChild(opt2);
-		});
+			options2.forEach(option => {
+				const opt2 = document.createElement("option");
+				opt2.value = option;
+				opt2.textContent = option;
+				select2.appendChild(opt2);
+			});
 
-		// Set default value for both selects
-		select0.value = 'market';
-		select1.value = 'buy';
-		select2.value = 'base_ccy';
+			// Set default values
+			select0.value = 'market';
+			select1.value = 'buy';
+			select2.value = 'base_ccy';
 
-		// Append the row with the required columns
-		row.innerHTML = `
-			<td contenteditable="true">0</td>
-			<td contenteditable="true"><</td>
-			<td contenteditable="true">0</td>
-			<td contenteditable="true">cash</td>
-			<td></td> <!-- Placeholder for the first select -->
-			<td></td> <!-- Placeholder for the first select -->
-			<td contenteditable="true">0</td>
-			<td></td> <!-- Placeholder for the second select -->
-			<td><button class="delOrderRow">Del</button></td>
-			<td><button class="actOrder">Act</button></td>
-		`;
+			// Append row with the required columns
+			row.innerHTML = `
+				<td contenteditable="true">${-newOrder}</td>
+				<td contenteditable="true">${i === 0 ? '<' : '>'}</td>
+				<td contenteditable="true">0</td>
+				<td contenteditable="true">cash</td>
+				<td></td>
+				<td></td>
+				<td contenteditable="true">0</td>
+				<td></td>
+				<td><button class="delOrderRow">Del</button></td>
+				<td><button class="actOrder">Act</button></td>
+			`;
 
-		// Append the select elements to the correct cells
-		row.querySelector("td:nth-child(5)").appendChild(select1);
-		row.querySelector("td:nth-child(6)").appendChild(select0);
-		row.querySelector("td:nth-child(8)").appendChild(select2);
+			// Append selects to cells
+			row.querySelector("td:nth-child(5)").appendChild(select1);
+			row.querySelector("td:nth-child(6)").appendChild(select0);
+			row.querySelector("td:nth-child(8)").appendChild(select2);
 
-		// Append the row to the table body
-		lowTableBody.appendChild(row);
+			// Append row to table body
+			lowTableBody.appendChild(row);
+		}
 	}
 
 
@@ -373,13 +415,54 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Evaluate conditions and execute actions
     async function checkConditions() {
+        // Thêm kiểm tra target table trước
+        const targetTableBody = document.querySelector("#targetTable tbody");
+        const targetRows = Array.from(targetTableBody.rows);
+        
+        for (const targetRow of targetRows) {
+            const selectedTable = targetRow.cells[0].querySelector('select').value;
+            const rowNumber = parseInt(targetRow.cells[1].textContent);
+            const orderChange = parseInt(targetRow.cells[2].textContent);
+            const tokenNameTarget = targetRow.cells[3].textContent;
+            const logic = targetRow.cells[5].querySelector('select').value;
+            const targetPrice = parseFloat(targetRow.cells[6].textContent);
+
+            // Cập nhật current price trong target table
+            const url = `https://api.binance.com/api/v3/ticker/price?symbol=${tokenNameTarget}USDT`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const currentPrice = parseFloat(data.price);
+                    targetRow.cells[4].textContent = currentPrice.toFixed(8);
+                    
+                    // Kiểm tra điều kiện logic sau khi có giá
+                    if (evaluateCondition(logic, targetPrice, currentPrice)) {
+                        // Tìm và cập nhật order trong bảng tương ứng
+                        const tableToUpdate = selectedTable === 'Order Table' ? 
+                            document.getElementById("orderTableBody") : 
+                            document.querySelector("#LowTable tbody");
+
+                        const rowToUpdate = Array.from(tableToUpdate.rows)[rowNumber - 1];
+                        if (rowToUpdate) {
+                            const currentOrder = parseInt(rowToUpdate.cells[0].textContent);
+							rowToUpdate.cells[2].textContent = varTokenPrice*0.98;
+                            rowToUpdate.cells[0].textContent = orderChange;
+                            showAlert(`Updated order in ${selectedTable} row ${rowNumber} to ${orderChange}`);
+                            targetRow.cells[1].textContent = -rowNumber; // Gán rowNumber về -rowNumber sau khi thực hiện xong
+                        }
+                    }
+                })
+                .catch(error => showAlert("Error fetching token price: " + error.message));
+        }
+
+        // Tiếp tục với code kiểm tra conditions hiện tại
         const orderTableBody = document.getElementById("orderTableBody");
         const orderRows = Array.from(orderTableBody.rows);
         orderRows.forEach(row => {
             const order = parseInt(row.cells[0].textContent);
             const logic = row.cells[1].textContent;
             const targetPrice = parseFloat(row.cells[2].textContent);
-            if (order > 0 && evaluateCondition(logic, targetPrice)) {
+            if (order > 0 && evaluateCondition(logic, targetPrice, varTokenPrice)) {
 				//showAlert('lệnh đúng order');
 				//console.log("giá varTokenPrice: ",varTokenPrice); // Kiểm tra xem giá trị đã được thay đổi chưa
 				//thongBaoTaget();
@@ -406,7 +489,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const order = parseInt(row.cells[0].textContent);
             const logic = row.cells[1].textContent;
             const targetPrice = parseFloat(row.cells[2].textContent);
-			if (order > 0 && evaluateCondition(logic, targetPrice)) {
+			if (order > 0 && evaluateCondition(logic, targetPrice, varTokenPrice)) {
 				//thongBaoTaget();
 				if (row.cells[4].querySelector('select').value === 'sell') {
 					try {
@@ -445,26 +528,45 @@ document.addEventListener("DOMContentLoaded", function() {
 					});
 					
 				}
-
+				console.log('Checking order execution...');
+				showAlert('Order condition met - executing order');
                 updateOrderStatus(row,lowTableBody);
             }
+			/*
             if (varTokenPrice < targetPrice) {
                 updateTargetPrice(row);
             }
+			*/
         };
     }
-	function updateOrderStatus(row,TableBody) {
+	function updateOrderStatus(row, TableBody) {
+        // Lấy giá trị order từ cột đầu tiên và chuyển thành số
         const order = parseInt(row.cells[0].textContent);
         
+        // Kiểm tra nếu order không phải là số hợp lệ
+        if (isNaN(order)) {
+            console.error("Invalid order value");
+            return;
+        }
+
+        // Tìm các hàng có order ngược dấu
         const opposingOrders = Array.from(TableBody.rows).filter(r => {
-            return parseInt(r.cells[0].textContent) === -order;
+            const opposingOrder = parseInt(r.cells[0].textContent);
+            return !isNaN(opposingOrder) && opposingOrder === -order;
         });
+
+        // Cập nhật giá trị các order ngược dấu thành dương và cập nhật DOM
         opposingOrders.forEach(r => {
-            r.cells[0].textContent = Math.abs(parseInt(r.cells[0].textContent));
+            const currentOrder = parseInt(r.cells[0].textContent);
+            const newValue = Math.abs(currentOrder);
+            r.cells[0].innerHTML = newValue; // Sử dụng innerHTML để cập nhật DOM
+            console.log("Updated opposing order from", currentOrder, "to", newValue);
         });
-		
-		row.cells[0].textContent = -order;
-		console.log("Updated order:", row.cells[0].textContent); // Kiểm tra xem giá trị đã được thay đổi chưa
+        
+        // Đổi dấu order hiện tại thành âm và cập nhật DOM
+        const newValue = -order;
+        row.cells[0].innerHTML = newValue; // Sử dụng innerHTML để cập nhật DOM
+        console.log("Updated current order from", order, "to", newValue);
     }
 
     function updateTargetPrice(row) {
@@ -472,74 +574,74 @@ document.addEventListener("DOMContentLoaded", function() {
         showAlert("Updating target price:"+ row);
     }
 
-    function evaluateCondition(logic, targetPrice) {
+    function evaluateCondition(logic, targetPrice, currentPrice) {
         switch (logic) {
             case ">":
-                return varTokenPrice > targetPrice;
+                return currentPrice > targetPrice;
             case "<":
-                return varTokenPrice < targetPrice;
+                return currentPrice < targetPrice;
             case "=":
-                return varTokenPrice === targetPrice;
+                return currentPrice === targetPrice;
             default:
                 return false;
         }
     }
 
     async function executeOrder(order) {
-		const apiUrl = 'https://www.okx.com';
+            const apiUrl = 'https://www.okx.com';
 
-		// Thiết lập các headers cần thiết
-		const timestamp = new Date().toISOString();
-		const method = 'POST';
-		const path = '/api/v5/trade/order';
-		const body = JSON.stringify({
-			instId: tokenName+'-USDT',     // Mã cặp giao dịch (ví dụ: BTC-USDT)
-			tdMode: order.tdMode,     // Chế độ giao dịch (cash, cross, isolated)
-			side: order.side,         // Mua (buy) hoặc bán (sell)
-			ordType: order.ordType,   // Kiểu lệnh (limit, market, ...)
-			sz: order.sz,             // Kích thước giao dịch
-			tgtCcy: order.tgtCcy      // Đơn vị giao dịch (base_ccy hoặc quote_ccy)
-		});
-		console.log(body);  // Kiểm tra kết quả JSON đã được tạo đúng
-		// Tạo pre-hash string theo hướng dẫn của OKX
-		const preHashString = `${timestamp}${method}${path}${body}`;
+            // Thiết lập các headers cần thiết
+            const timestamp = new Date().toISOString();
+            const method = 'POST';
+            const path = '/api/v5/trade/order';
+            const body = JSON.stringify({
+                instId: tokenName+'-USDT',     // Mã cặp giao dịch (ví dụ: BTC-USDT)
+                tdMode: order.tdMode,     // Chế độ giao dịch (cash, cross, isolated)
+                side: order.side,         // Mua (buy) hoặc bán (sell)
+                ordType: order.ordType,   // Kiểu lệnh (limit, market, ...)
+                sz: order.sz,             // Kích thước giao dịch
+                tgtCcy: order.tgtCcy      // Đơn vị giao dịch (base_ccy hoặc quote_ccy)
+            });
+            console.log(body);  // Kiểm tra kết quả JSON đã được tạo đúng
+            // Tạo pre-hash string theo hướng dẫn của OKX
+            const preHashString = `${timestamp}${method}${path}${body}`;
 
-		// Tạo chữ ký
-		const signature = await createSignature(preHashString, order.secretKey);
+            // Tạo chữ ký
+            const signature = await createSignature(preHashString, order.secretKey);
 
-		// Headers cho request
-		const headers = {
-			'Content-Type': 'application/json',
-			'OK-ACCESS-KEY': order.apiKey,         // API Key
-			'OK-ACCESS-SIGN': signature,          // Chữ ký được tạo
-			'OK-ACCESS-TIMESTAMP': timestamp,     // Thời gian hiện tại (ISO 8601)
-			'OK-ACCESS-PASSPHRASE': order.passphrase // Passphrase của tài khoản
-		};
+            // Headers cho request
+            const headers = {
+                'Content-Type': 'application/json',
+                'OK-ACCESS-KEY': order.apiKey,         // API Key
+                'OK-ACCESS-SIGN': signature,          // Chữ ký được tạo
+                'OK-ACCESS-TIMESTAMP': timestamp,     // Thời gian hiện tại (ISO 8601)
+                'OK-ACCESS-PASSPHRASE': order.passphrase // Passphrase của tài khoản
+            };
 
-		try {
-			// Gửi request đến API của OKX
-			const response = await fetch(apiUrl + path, {
-				method: method,
-				headers: headers,
-				body: body
-			});
+            try {
+                // Gửi request đến API của OKX
+                const response = await fetch(apiUrl + path, {
+                    method: method,
+                    headers: headers,
+                    body: body
+                });
 
-			// Xử lý kết quả
-			const result = await response.json();
+                // Xử lý kết quả
+                const result = await response.json();
 
-			if (response.ok) {
-				showAlert('Order executed successfully:'+ result);
-				console.log('Order executed successfully: ', result);
-				thongBaoTaget();
-			} else {
-				showAlert('Error executing order:'+ result);
-				console.error('Error: ', result);
-			}
-		} catch (error) {
-			// Xử lý lỗi mạng hoặc lỗi không mong muốn
-			showAlert('Network or unexpected error:'+ error);
-		}
-	}
+                if (response.ok) {
+                    showAlert('Order executed successfully:'+ result);
+                    console.log('Order executed successfully: ', result);
+                    thongBaoTaget();
+                } else {
+                    showAlert('Error executing order:'+ result);
+                    console.error('Error: ', result);
+                }
+            } catch (error) {
+                // Xử lý lỗi mạng hoặc lỗi không mong muốn
+            showAlert('Network or unexpected error:'+ error);
+        }
+    }
 
 
     async function createSignature(dataToSign, secretKey) {
@@ -606,7 +708,27 @@ document.addEventListener("DOMContentLoaded", function() {
     saveAsLowTableButton.addEventListener("click", saveAsLowTable);
     loadLowTableInput.addEventListener("change", event => loadLowTable(event.target.files[0]));
 
-    setInterval(updateTokenPrice, 300);
+    
+    const intervalInput = document.getElementById("updateInterval");
+    const saveIntervalButton = document.getElementById("saveInterval");
+
+    saveIntervalButton.addEventListener("click", () => {
+        const newInterval = parseInt(intervalInput.value);
+        if (!isNaN(newInterval) && newInterval > 0) {
+            updateInterval = newInterval;
+            clearInterval(priceUpdateTimer);
+            priceUpdateTimer = setInterval(() => {
+                updateTokenPrice();
+                checkConditions();
+            }, updateInterval);
+            showAlert("Update interval changed to " + newInterval + "ms");
+        } else {
+            showAlert("Please enter a valid interval");
+        }
+    });
+
+    
+	
 	// thông báo
 	function showAlert(message) {
             const alertBox = document.createElement('div');
@@ -616,6 +738,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Hiển thị alert
             alertBox.style.display = 'block';
+			thongBaoTaget();
 
             // Tự động ẩn sau 1 giây
             setTimeout(() => {
@@ -623,8 +746,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 alertBox.remove(); // Xóa phần tử khỏi DOM
             }, 1000);
         }
-		function thongBaoTaget() {
-			// Tạo âm thanh còi báo bằng Web Audio API
+	function thongBaoTaget() {
+			// Tạo âm thanh trống bằng Web Audio API
 			const context = new (window.AudioContext || window.webkitAudioContext)();
 
 			// Tạo nguồn âm thanh
@@ -635,34 +758,34 @@ document.addEventListener("DOMContentLoaded", function() {
 			oscillator.connect(gainNode);
 			gainNode.connect(context.destination);
 
-			// Kiểu sóng tạo âm thanh (square hoặc sine để tạo hiệu ứng thú vị hơn)
+			// Kiểu sóng tạo âm thanh (sine để tạo âm thanh trống)
 			oscillator.type = 'sine';
 
-			// Tần số cao và thấp cho tiếng còi
-			const lowFrequency = 600;
-			const highFrequency = 1200;
-
+			// Tần số cao cho tiếng ting
+			const tingFrequency = 1500; // Tần số cao cho tiếng ting
+			
 			// Thời gian bắt đầu
 			const startTime = context.currentTime;
 
-			// Chu kỳ thay đổi tần số (giống tiếng còi xe cảnh sát)
-			const cycleDuration = 0.4; // 0.4 giây mỗi chu kỳ (thay đổi giữa tần số cao và thấp)
-
+			// Chu kỳ đánh ting
+			const beatDuration = 2; // 0.2 giây mỗi nhịp
+			
 			// Thời gian phát âm thanh tổng cộng
-			const playDuration = 3; // 5 giây
+			const playDuration = 2; // 2 giây
 
-			// Tạo hiệu ứng còi xe cảnh sát bằng cách lặp qua các chu kỳ
-			for (let i = 0; i < playDuration / cycleDuration; i++) {
-				const currentCycleStart = startTime + i * cycleDuration;
+			// Tạo hiệu ứng tiếng ting bằng cách lặp qua các nhịp
+			for (let i = 0; i < playDuration / beatDuration; i++) {
+				const beatTime = startTime + i * beatDuration;
+				
+				// Đặt tần số cho tiếng ting
+				oscillator.frequency.setValueAtTime(tingFrequency, beatTime);
 
-				// Tần số thấp trong nửa chu kỳ đầu
-				oscillator.frequency.setValueAtTime(lowFrequency, currentCycleStart);
-
-				// Tăng lên tần số cao trong nửa chu kỳ tiếp theo
-				oscillator.frequency.setValueAtTime(highFrequency, currentCycleStart + cycleDuration / 2);
+				// Tạo hiệu ứng decay cho mỗi nhịp
+				gainNode.gain.setValueAtTime(1, beatTime);
+				gainNode.gain.exponentialRampToValueAtTime(0.01, beatTime + beatDuration * 0.8);
 			}
 
-			// Tắt âm thanh sau khi hết thời gian phát
+			// Bắt đầu và kết thúc âm thanh
 			oscillator.start(startTime);
 			oscillator.stop(startTime + playDuration);
 
@@ -701,6 +824,146 @@ document.addEventListener("DOMContentLoaded", function() {
                     sz: row.cells[6].textContent,
                     tgtCcy: row.cells[7].querySelector('select').value
             });
+        }
+    });
+
+    // Thêm event listener cho toggleSwitch
+    const toggleSwitch = document.getElementById("toggleSwitch");
+    toggleSwitch.addEventListener("change", function() {
+        isTradeEnabled = this.checked;
+        showAlert(isTradeEnabled ? "Trading enabled" : "Trading disabled");
+    });
+
+    // Thêm hàm xử lý cho Target table
+    function addTargetRow() {
+        const targetTableBody = document.querySelector("#targetTable tbody");
+        const row = document.createElement("tr");
+
+        // Tạo select cho cột Table
+        const tableSelect = document.createElement("select");
+        const tableOptions = ['Order Table', 'Low Table'];
+        tableOptions.forEach(option => {
+            const opt = document.createElement("option");
+            opt.value = option;
+            opt.textContent = option;
+            tableSelect.appendChild(opt);
+        });
+
+        // Tạo select cho cột Logic
+        const logicSelect = document.createElement("select");
+        const logicOptions = ['>', '<', '='];
+        logicOptions.forEach(option => {
+            const opt = document.createElement("option");
+            opt.value = option;
+            opt.textContent = option;
+            logicSelect.appendChild(opt);
+        });
+
+        row.innerHTML = `
+            <td></td>
+            <td contenteditable="true">-1</td>
+            <td contenteditable="true">0</td>
+            <td contenteditable="true">BTC</td>
+            <td>${varTokenPrice || '0'}</td>
+            <td></td>
+            <td contenteditable="true">0</td>
+            <td><button class="delTargetRow">Del</button></td>
+        `;
+
+        // Thêm các select vào các cột tương ứng
+        row.querySelector("td:nth-child(1)").appendChild(tableSelect);
+        row.querySelector("td:nth-child(6)").appendChild(logicSelect);
+
+        targetTableBody.appendChild(row);
+    }
+
+    function clearTargetTable() {
+        const targetTableBody = document.querySelector("#targetTable tbody");
+        targetTableBody.innerHTML = "";
+    }
+
+    function saveAsTargetTable() {
+        const targetTableBody = document.querySelector("#targetTable tbody");
+        const rows = Array.from(targetTableBody.rows);
+        const targetData = rows.map(row => {
+            return {
+                table: row.cells[0].querySelector('select').value,
+                row: parseInt(row.cells[1].textContent),
+                orderChange: parseInt(row.cells[2].textContent),
+                tokenName: row.cells[3].textContent,
+                currentPrice: parseFloat(row.cells[4].textContent),
+                logic: row.cells[5].querySelector('select').value,
+                targetPrice: parseFloat(row.cells[6].textContent)
+            };
+        });
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetData));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "targets.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function loadTargetTable(file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const data = JSON.parse(event.target.result);
+            const targetTableBody = document.querySelector("#targetTable tbody");
+            targetTableBody.innerHTML = "";
+            
+            data.forEach(target => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td></td>
+                    <td contenteditable="true">${target.row}</td>
+                    <td contenteditable="true">${target.orderChange}</td>
+                    <td contenteditable="true">${target.tokenName}</td>
+                    <td>${target.currentPrice}</td>
+                    <td></td>
+                    <td contenteditable="true">${target.targetPrice}</td>
+                    <td><button class="delTargetRow">Del</button></td>
+                `;
+
+                // Tạo và set giá trị cho các select
+                const tableSelect = document.createElement("select");
+                ['Order Table', 'Low Table'].forEach(option => {
+                    const opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    opt.selected = option === target.table;
+                    tableSelect.appendChild(opt);
+                });
+
+                const logicSelect = document.createElement("select");
+                ['>', '<', '='].forEach(option => {
+                    const opt = document.createElement("option");
+                    opt.value = option;
+                    opt.textContent = option;
+                    opt.selected = option === target.logic;
+                    logicSelect.appendChild(opt);
+                });
+
+                row.querySelector("td:nth-child(1)").appendChild(tableSelect);
+                row.querySelector("td:nth-child(6)").appendChild(logicSelect);
+
+                targetTableBody.appendChild(row);
+            });
+        };
+        reader.readAsText(file);
+    }
+
+    // Thêm event listeners cho Target table
+    clearTargetTableButton.addEventListener("click", clearTargetTable);
+    addTargetRowButton.addEventListener("click", addTargetRow);
+    saveAsTargetTableButton.addEventListener("click", saveAsTargetTable);
+    loadTargetTableInput.addEventListener("change", event => loadTargetTable(event.target.files[0]));
+
+    // Thêm xử lý cho nút Del trong Target table
+    document.addEventListener("click", function(event) {
+        if (event.target.classList.contains("delTargetRow")) {
+            event.target.closest("tr").remove();
         }
     });
 });
