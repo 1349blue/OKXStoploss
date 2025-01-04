@@ -8,7 +8,7 @@ body {
     background-color: #f4f4f4;
 }
 
-#layout1,#layout2, #layout3, #layout4 {
+#layout1,#layout2, #layout3, #layout4, #layout5 {
     margin: 5px;
     padding: 5px;
     background-color: white;
@@ -83,11 +83,11 @@ th {
 }
 
 /* Add this container for horizontal scrolling */
- #layout2, #layout3, #layout4 {
-    overflow-x: auto; /* Thêm thanh cuộn ngang vào layout */
+#layout2, #layout3, #layout4, #layout5 {
+    overflow-x: auto;
     padding: 0;
 }
-#tokenPrice, #tokenName, #apiKey, #secretKey, #passphrase {
+#updateInterval, #tokenPrice, #tokenName, #apiKey, #secretKey, #passphrase {
     padding: 2px;
     margin: 1px 0; /* Loại bỏ margin ngang để tránh tràn ô */
     border-radius: 4px;
@@ -96,9 +96,9 @@ th {
 	width: 20%; /* Cho phép input co giãn theo chiều ngang của cột */
     box-sizing: border-box; /* Đảm bảo padding và border không làm tăng chiều rộng */
 }
-#loadOrderTable, #loadLowTable {
-	width: 25%;
-	padding: 4px;
+#loadOrderTable, #loadLowTable, #loadTargetTable {
+    width: 25%;
+    padding: 4px;
     margin: 3px;
     background-color: #007bff;
     color: white;
@@ -106,4 +106,39 @@ th {
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
+}
+
+/* Custom Alert Styles */
+.custom-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.3s ease forwards, fadeOut 0.3s ease 0.7s forwards;
+    max-width: 300px;
+    word-wrap: break-word;
+    border-left: 5px solid #2E7D32;
+}
+
+/* Animation keyframes */
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
 }
