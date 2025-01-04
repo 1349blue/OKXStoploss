@@ -20,8 +20,20 @@
 	<div id="layout2">
         <h2>OKX Token Price Checker</h2>
         <!-- Input for token name -->
-        <input type="text" id="tokenName" placeholder="Enter token name (e.g., BTC-USDT)">
-        <p>Current Price: <span id="tokenPrice">-</span></p>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="text" id="tokenName" placeholder="Enter token name (e.g., BTC-USDT)">
+            <p style="margin: 0;">Current Price: <span id="tokenPrice">-</span></p>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" id="toggleSwitch">
+                Bật/Tắt
+            </label>
+            
+        </div>
+        <!-- Thêm input và button cho update interval -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="number" id="updateInterval" placeholder="Update interval (ms)">
+            <button id="saveInterval">Save Interval</button>
+        </div>
     </div>
     <!-- Layout : Order Table -->
     <div id="layout3">
@@ -52,7 +64,7 @@
     </div>
 	<!-- Layout 4: Low Price Table -->
     <div id="layout4">
-		<h2>Condition table</h2>
+		<h2>Condition table: lệnh sell là bán hết token</h2>
 		<button id="clearLowTable">Clear</button>
         <button id="addLowRow">Add</button>
 		<button id="saveAsLowTable">Save as</button>
@@ -77,6 +89,32 @@
 			</tbody>
         </table>
     </div>
+
+    <div id="layout5">
+        <h2>Target table</h2>
+        <button id="clearTargetTable">Clear</button>
+        <button id="addTargetRow">Add</button>
+        <button id="saveAsTargetTable">Save as</button>
+        <input type="file" id="loadTargetTable" accept="application/json">
+        <table id="targetTable">
+            <thead>
+                <tr>
+                    <th>Table</th>
+                    <th>Row</th>
+                    <th>Order Change</th>
+                    <th>TokenName</th>
+                    <th>Current Price</th>
+                    <th>Logic</th>
+                    <th>Target Price</th>
+                    <th>Del</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
