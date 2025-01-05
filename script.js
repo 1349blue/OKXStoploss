@@ -40,11 +40,20 @@ document.addEventListener("DOMContentLoaded", function() {
     const saveAsTargetTableButton = document.getElementById("saveAsTargetTable");
     const loadTargetTableInput = document.getElementById("loadTargetTable");
 
+    const loadOrderTableButton = document.getElementById("loadOrderTable");
+    const fileInputOrderTable = document.getElementById("fileInputOrderTable");
+    
+    const loadLowTableButton = document.getElementById("loadLowTable");
+    const fileInputLowTable = document.getElementById("fileInputLowTable");
+    
+    const loadTargetTableButton = document.getElementById("loadTargetTable");
+    const fileInputTargetTable = document.getElementById("fileInputTargetTable");
+
 	let tokenName = '';
     let varTokenPrice = 0;
     let orders = [];
     let conditions = [];
-	let updateInterval = 2000; // Default interval
+	let updateInterval = 1000; // Default interval
 
     // Thêm biến toàn cục để theo dõi trạng thái của toggle
     let isTradeEnabled = false;
@@ -55,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         if (isTradeEnabled) {
             // Bắt đầu vòng lặp khi enabled = true
+
             priceUpdateTimer = setInterval(() => {
                 updateTokenPrice();
                 checkConditions(); 
@@ -105,10 +115,22 @@ document.addEventListener("DOMContentLoaded", function() {
     function loadApiKey(file) {
         const reader = new FileReader();
         reader.onload = function(event) {
-            const data = JSON.parse(event.target.result);
-            apiKeyInput.value = data.apiKey;
-            secretKeyInput.value = data.secretKey;
-            passphraseInput.value = data.passphrase;
+            try {
+                const data = JSON.parse(event.target.result);
+                apiKeyInput.value = data.apiKey;
+                secretKeyInput.value = data.secretKey;
+                passphraseInput.value = data.passphrase;
+                
+                // Reset file input để có thể load lại file
+                document.getElementById('fileInput').value = '';
+                
+                showAlert("API keys loaded successfully");
+            } catch (error) {
+                showAlert("Error loading API keys: " + error.message);
+            }
+        };
+        reader.onerror = function() {
+            showAlert("Error reading file");
         };
         reader.readAsText(file);
     }
@@ -135,7 +157,6 @@ document.addEventListener("DOMContentLoaded", function() {
 				tokenPriceSpan.textContent = varTokenPrice.toFixed(8); // Hiển thị giá với 2 chữ số thập phân
 			})
 			.catch(error => showAlert("Error fetching token price: " + error.message));
-			checkConditions();
 	}
 
 
@@ -188,19 +209,20 @@ document.addEventListener("DOMContentLoaded", function() {
 			<td contenteditable="true">0</td>
 			<td contenteditable="true"><</td>
 			<td contenteditable="true">0</td>
-			<td contenteditable="true">cash</td>
-			<td></td> <!-- Placeholder for the first select -->
-			<td></td> <!-- Placeholder for the first select -->
 			<td contenteditable="true">0</td>
-			<td></td> <!-- Placeholder for the second select -->
+			<td contenteditable="true">cash</td>
+			<td></td> <!-- Placeholder for select side -->
+			<td></td> <!-- Placeholder for select ordType -->
+			<td contenteditable="true">0</td>
+			<td></td> <!-- Placeholder for select tgtCcy -->
 			<td><button class="delOrderRow">Del</button></td>
 			<td><button class="actOrder">Act</button></td>
 		`;
 
 		// Append the select elements to the correct cells
-		row.querySelector("td:nth-child(5)").appendChild(select1);
-		row.querySelector("td:nth-child(6)").appendChild(select0);
-		row.querySelector("td:nth-child(8)").appendChild(select2);
+		row.querySelector("td:nth-child(6)").appendChild(select1);
+		row.querySelector("td:nth-child(7)").appendChild(select0);
+		row.querySelector("td:nth-child(9)").appendChild(select2);
 
 		// Append the row to the table body
 		orderTableBody.appendChild(row);
@@ -217,61 +239,121 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Save order table to JSON file
 	function saveAsOrderTable() {
-		const orderTableBody = document.getElementById("orderTableBody");
-		const rows = Array.from(orderTableBody.rows);
-		const orderData = rows.map(row => {
-			return {
-				order: parseInt(row.cells[0].textContent),
-				logic: row.cells[1].textContent,
-				targetPrice: parseFloat(row.cells[2].textContent),
-				tdMode: row.cells[3].textContent,
-				side: row.cells[4].querySelector('select') ? row.cells[4].querySelector('select').value : row.cells[4].textContent,  // Lấy giá trị từ select
-				ordType: row.cells[5].querySelector('select') ? row.cells[5].querySelector('select').value : row.cells[5].textContent,  // Lấy giá trị từ select
-				sz: row.cells[6].textContent,
-				tgtCcy: row.cells[7].querySelector('select') ? row.cells[7].querySelector('select').value : row.cells[7].textContent // Lấy giá trị từ select
-			};
-		});
-		const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(orderData));
-		const downloadAnchorNode = document.createElement('a');
-		downloadAnchorNode.setAttribute("href", dataStr);
-		downloadAnchorNode.setAttribute("download", "orders.json");
-		document.body.appendChild(downloadAnchorNode);
-		downloadAnchorNode.click();
-		downloadAnchorNode.remove();
-	}
+		try {
+			const orderTableBody = document.getElementById("orderTableBody");
+			if (!orderTableBody) {
+				throw new Error("Order table body not found");
+			}
 
+			const rows = Array.from(orderTableBody.rows);
+			const orderData = rows.map(row => {
+				try {
+					return {
+						order: parseInt(row.cells[0].textContent) || 0,
+						logic: row.cells[1].textContent || '',
+						targetPrice: parseFloat(row.cells[2].textContent) || 0,
+						percentage: parseFloat(row.cells[3].textContent) || 0,
+						tdMode: row.cells[4].textContent || '',
+						side: row.cells[5].querySelector('select')?.value || 'buy',
+						ordType: row.cells[6].querySelector('select')?.value || 'market', 
+						sz: row.cells[7].textContent || '0',
+						tgtCcy: row.cells[8].querySelector('select')?.value || 'base_ccy'
+					};
+				} catch (err) {
+					console.error("Error parsing row:", err);
+					showAlert("Error parsing table row");
+					return null;
+				}
+			}).filter(item => item !== null);
+
+			const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(orderData, null, 2));
+			const downloadAnchorNode = document.createElement('a');
+			downloadAnchorNode.setAttribute("href", dataStr);
+			downloadAnchorNode.setAttribute("download", "orders.json");
+			document.body.appendChild(downloadAnchorNode);
+			downloadAnchorNode.click();
+			downloadAnchorNode.remove();
+			showAlert("Order table saved successfully");
+		} catch (err) {
+			console.error("Error saving order table:", err);
+			showAlert("Error saving order table");
+		}
+	}
 
     // Load order table from JSON file
 	function loadOrderTable(file) {
-		const reader = new FileReader();
-		reader.onload = function(event) {
-			const data = JSON.parse(event.target.result);
-			const orderTableBody = document.getElementById("orderTableBody");
-			orderTableBody.innerHTML = "";
-			data.forEach(order => {
-				const row = document.createElement("tr");
-				row.innerHTML = `
-					<td contenteditable="true">${order.order}</td>
-					<td contenteditable="true">${order.logic}</td>
-					<td contenteditable="true">${order.targetPrice}</td>
-					<td contenteditable="true">${order.tdMode}</td>
-					<td></td> <!-- Placeholder for the first select -->
-					<td></td> <!-- Placeholder for the second select -->
-					<td contenteditable="true">${order.sz}</td>
-					<td></td> <!-- Placeholder for the third select -->
-					<td><button class="delOrderRow">Del</button></td>
-					<td><button class="actOrder">Act</button></td>
-				`;
+		try {
+			if (!file) {
+				throw new Error("No file selected");
+			}
 
-				// Đặt giá trị cho các select từ dữ liệu đã lưu
-				row.querySelector("td:nth-child(5)").innerHTML = `<select><option value="buy" ${order.side === 'buy' ? 'selected' : ''}>buy</option><option value="sell" ${order.side === 'sell' ? 'selected' : ''}>sell</option></select>`;
-				row.querySelector("td:nth-child(6)").innerHTML = `<select><option value="market" ${order.ordType === 'market' ? 'selected' : ''}>market</option><option value="limit" ${order.ordType === 'limit' ? 'selected' : ''}>limit</option></select>`;
-				row.querySelector("td:nth-child(8)").innerHTML = `<select><option value="base_ccy" ${order.tgtCcy === 'base_ccy' ? 'selected' : ''}>base_ccy</option><option value="quote_ccy" ${order.tgtCcy === 'quote_ccy' ? 'selected' : ''}>quote_ccy</option></select>`;
+			const reader = new FileReader();
+			reader.onload = function(event) {
+				try {
+					const data = JSON.parse(event.target.result);
+					const orderTableBody = document.getElementById("orderTableBody");
+					if (!orderTableBody) {
+						throw new Error("Order table body not found");
+					}
 
-				orderTableBody.appendChild(row);
-			});
-		};
-		reader.readAsText(file);
+					orderTableBody.innerHTML = "";
+					data.forEach(order => {
+						const row = document.createElement("tr");
+						
+						// Create select elements
+						const sideSelect = document.createElement("select");
+						const ordTypeSelect = document.createElement("select");
+						const tgtCcySelect = document.createElement("select");
+
+						// Add options
+						sideSelect.innerHTML = `
+							<option value="buy" ${order.side === 'buy' ? 'selected' : ''}>buy</option>
+							<option value="sell" ${order.side === 'sell' ? 'selected' : ''}>sell</option>
+						`;
+						ordTypeSelect.innerHTML = `
+							<option value="market" ${order.ordType === 'market' ? 'selected' : ''}>market</option>
+							<option value="limit" ${order.ordType === 'limit' ? 'selected' : ''}>limit</option>
+						`;
+						tgtCcySelect.innerHTML = `
+							<option value="base_ccy" ${order.tgtCcy === 'base_ccy' ? 'selected' : ''}>base_ccy</option>
+							<option value="quote_ccy" ${order.tgtCcy === 'quote_ccy' ? 'selected' : ''}>quote_ccy</option>
+						`;
+
+						row.innerHTML = `
+							<td contenteditable="true">${order.order || 0}</td>
+							<td contenteditable="true">${order.logic || ''}</td>
+							<td contenteditable="true">${order.targetPrice || 0}</td>
+							<td contenteditable="true">${order.percentage || 0}</td>
+							<td contenteditable="true">${order.tdMode || 'cash'}</td>
+							<td></td>
+							<td></td>
+							<td contenteditable="true">${order.sz || 0}</td>
+							<td></td>
+							<td><button class="delOrderRow">Del</button></td>
+							<td><button class="actOrder">Act</button></td>
+						`;
+
+						// Append selects
+						row.querySelector("td:nth-child(6)").appendChild(sideSelect);
+						row.querySelector("td:nth-child(7)").appendChild(ordTypeSelect);
+						row.querySelector("td:nth-child(9)").appendChild(tgtCcySelect);
+
+						orderTableBody.appendChild(row);
+					});
+					showAlert("Order table loaded successfully");
+				} catch (err) {
+					console.error("Error parsing file:", err);
+					showAlert("Error parsing file");
+				}
+			};
+			reader.onerror = function() {
+				showAlert("Error reading file");
+			};
+			reader.readAsText(file);
+		} catch (err) {
+			console.error("Error loading order table:", err);
+			showAlert("Error loading order table");
+		}
 	}
 
 
@@ -445,7 +527,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         const rowToUpdate = Array.from(tableToUpdate.rows)[rowNumber - 1];
                         if (rowToUpdate) {
                             const currentOrder = parseInt(rowToUpdate.cells[0].textContent);
-							rowToUpdate.cells[2].textContent = varTokenPrice*0.98;
+							Array.from(tableToUpdate.rows).forEach(row => {
+								row.cells[2].textContent = varTokenPrice;
+							});
                             rowToUpdate.cells[0].textContent = orderChange;
                             showAlert(`Updated order in ${selectedTable} row ${rowNumber} to ${orderChange}`);
                             targetRow.cells[1].textContent = -rowNumber; // Gán rowNumber về -rowNumber sau khi thực hiện xong
@@ -462,7 +546,9 @@ document.addEventListener("DOMContentLoaded", function() {
             const order = parseInt(row.cells[0].textContent);
             const logic = row.cells[1].textContent;
             const targetPrice = parseFloat(row.cells[2].textContent);
-            if (order > 0 && evaluateCondition(logic, targetPrice, varTokenPrice)) {
+            const percentageValue = parseFloat(row.cells[3].textContent) / 100; // Chuyển % thành số thập phân
+            const realPrice = targetPrice * (1 + percentageValue);
+            if (order > 0 && evaluateCondition(logic, realPrice, varTokenPrice)) {
 				//showAlert('lệnh đúng order');
 				//console.log("giá varTokenPrice: ",varTokenPrice); // Kiểm tra xem giá trị đã được thay đổi chưa
 				//thongBaoTaget();
@@ -471,11 +557,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     apiKey: apiKeyInput.value,
                     secretKey: secretKeyInput.value,
                     passphrase: passphraseInput.value,
-                    tdMode: row.cells[3].textContent,
-                    side: row.cells[4].querySelector('select').value,
-                    ordType: row.cells[5].querySelector('select').value,
-                    sz: row.cells[6].textContent,
-                    tgtCcy: row.cells[7].querySelector('select').value
+                    tdMode: row.cells[4].textContent,
+                    side: row.cells[5].querySelector('select').value,
+                    ordType: row.cells[6].querySelector('select').value,
+                    sz: row.cells[7].textContent,
+                    tgtCcy: row.cells[8].querySelector('select').value
                 });
 				
                 updateOrderStatus(row,orderTableBody);
@@ -532,11 +618,11 @@ document.addEventListener("DOMContentLoaded", function() {
 				showAlert('Order condition met - executing order');
                 updateOrderStatus(row,lowTableBody);
             }
-			/*
-            if (varTokenPrice < targetPrice) {
+			
+            if (document.getElementById('changeMin').checked && varTokenPrice < targetPrice) {
                 updateTargetPrice(row);
             }
-			*/
+			
         };
     }
 	function updateOrderStatus(row, TableBody) {
@@ -571,7 +657,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function updateTargetPrice(row) {
         row.cells[2].textContent = varTokenPrice;
-        showAlert("Updating target price:"+ row);
     }
 
     function evaluateCondition(logic, targetPrice, currentPrice) {
@@ -588,61 +673,87 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     async function executeOrder(order) {
-            const apiUrl = 'https://www.okx.com';
+        const apiUrl = 'https://www.okx.com';
 
-            // Thiết lập các headers cần thiết
-            const timestamp = new Date().toISOString();
-            const method = 'POST';
-            const path = '/api/v5/trade/order';
-            const body = JSON.stringify({
-                instId: tokenName+'-USDT',     // Mã cặp giao dịch (ví dụ: BTC-USDT)
-                tdMode: order.tdMode,     // Chế độ giao dịch (cash, cross, isolated)
-                side: order.side,         // Mua (buy) hoặc bán (sell)
-                ordType: order.ordType,   // Kiểu lệnh (limit, market, ...)
-                sz: order.sz,             // Kích thước giao dịch
-                tgtCcy: order.tgtCcy      // Đơn vị giao dịch (base_ccy hoặc quote_ccy)
+        // Thiết lập các headers cần thiết
+        const timestamp = new Date().toISOString();
+        const method = 'POST';
+        const path = '/api/v5/trade/order';
+        const body = JSON.stringify({
+            instId: tokenName+'-USDT',     // Mã cặp giao dịch (ví dụ: BTC-USDT)
+            tdMode: order.tdMode,     // Chế độ giao dịch (cash, cross, isolated)
+            side: order.side,         // Mua (buy) hoặc bán (sell)
+            ordType: order.ordType,   // Kiểu lệnh (limit, market, ...)
+            sz: order.sz,             // Kích thước giao dịch
+            tgtCcy: order.tgtCcy      // Đơn vị giao dịch (base_ccy hoặc quote_ccy)
+        });
+        console.log(body);  // Kiểm tra kết quả JSON đã được tạo đúng
+        // Tạo pre-hash string theo hướng dẫn của OKX
+        const preHashString = `${timestamp}${method}${path}${body}`;
+
+        // Tạo chữ ký
+        const signature = await createSignature(preHashString, order.secretKey);
+
+        // Headers cho request
+        const headers = {
+            'Content-Type': 'application/json',
+            'OK-ACCESS-KEY': order.apiKey,         // API Key
+            'OK-ACCESS-SIGN': signature,          // Chữ ký được tạo
+            'OK-ACCESS-TIMESTAMP': timestamp,     // Thời gian hiện tại (ISO 8601)
+            'OK-ACCESS-PASSPHRASE': order.passphrase // Passphrase của tài khoản
+        };
+
+        try {
+            const response = await fetch(apiUrl + path, {
+                method: method,
+                headers: headers,
+                body: body
             });
-            console.log(body);  // Kiểm tra kết quả JSON đã được tạo đúng
-            // Tạo pre-hash string theo hướng dẫn của OKX
-            const preHashString = `${timestamp}${method}${path}${body}`;
 
-            // Tạo chữ ký
-            const signature = await createSignature(preHashString, order.secretKey);
+            const result = await response.json();
 
-            // Headers cho request
-            const headers = {
-                'Content-Type': 'application/json',
-                'OK-ACCESS-KEY': order.apiKey,         // API Key
-                'OK-ACCESS-SIGN': signature,          // Chữ ký được tạo
-                'OK-ACCESS-TIMESTAMP': timestamp,     // Thời gian hiện tại (ISO 8601)
-                'OK-ACCESS-PASSPHRASE': order.passphrase // Passphrase của tài khoản
-            };
-
-            try {
-                // Gửi request đến API của OKX
-                const response = await fetch(apiUrl + path, {
-                    method: method,
-                    headers: headers,
-                    body: body
+            if (response.ok) {
+                // Thêm lệnh vào lịch sử
+                addToHistory({
+                    timestamp: new Date().toLocaleString(),
+                    type: order.side,
+                    price: varTokenPrice,
+                    amount: order.sz,
+                    token: tokenName,
+                    status: 'Thành công'
                 });
-
-                // Xử lý kết quả
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAlert('Order executed successfully:'+ result);
-                    console.log('Order executed successfully: ', result);
-                    thongBaoTaget();
-                } else {
-                    showAlert('Error executing order:'+ result);
-                    console.error('Error: ', result);
-                }
-            } catch (error) {
-                // Xử lý lỗi mạng hoặc lỗi không mong muốn
+                
+                showAlert('Order executed successfully:'+ result);
+                console.log('Order executed successfully: ', result);
+                thongBaoTaget();
+            } else {
+                // Thêm lệnh thất bại vào lịch sử
+                addToHistory({
+                    timestamp: new Date().toLocaleString(),
+                    type: order.side,
+                    price: varTokenPrice,
+                    amount: order.sz,
+                    token: tokenName,
+                    status: 'Thất bại'
+                });
+                
+                showAlert('Error executing order:'+ result);
+                console.error('Error: ', result);
+            }
+        } catch (error) {
+            // Thêm lỗi vào lịch sử
+            addToHistory({
+                timestamp: new Date().toLocaleString(),
+                type: order.side,
+                price: varTokenPrice,
+                amount: order.sz,
+                token: tokenName,
+                status: 'Lỗi: ' + error.message
+            });
+            
             showAlert('Network or unexpected error:'+ error);
         }
     }
-
 
     async function createSignature(dataToSign, secretKey) {
         const encoder = new TextEncoder();
@@ -691,6 +802,39 @@ document.addEventListener("DOMContentLoaded", function() {
 		}
 	}
 
+    // Thêm hàm mới để xử lý lịch sử
+    function addToHistory(orderInfo) {
+        const historyDiv = document.getElementById('orderHistory');
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.innerHTML = `
+            ${orderInfo.timestamp} - 
+            ${orderInfo.type.toUpperCase()} ${orderInfo.amount} ${orderInfo.token} 
+            @ ${orderInfo.price} USDT - 
+            ${orderInfo.status}
+        `;
+        historyDiv.insertBefore(historyItem, historyDiv.firstChild);
+    }
+
+    // Thêm các event listener cho nút điều khiển lịch sử
+    document.getElementById('clearHistory').addEventListener('click', () => {
+        document.getElementById('orderHistory').innerHTML = '';
+    });
+
+    document.getElementById('saveHistory').addEventListener('click', () => {
+        const historyDiv = document.getElementById('orderHistory');
+        const historyText = Array.from(historyDiv.children)
+            .map(item => item.textContent.trim())
+            .join('\n');
+        
+        const blob = new Blob([historyText], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `trading_history_${new Date().toISOString().slice(0,10)}.txt`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
 
     // Add event listeners
     saveApiKeyButton.addEventListener("click", saveApiKey);
@@ -747,9 +891,13 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 1000);
         }
 	function thongBaoTaget() {
-			// Tạo âm thanh trống bằng Web Audio API
+		try {
 			const context = new (window.AudioContext || window.webkitAudioContext)();
-
+			// Kiểm tra xem browser có hỗ trợ Web Audio API không
+			if (!context) {
+				throw new Error('Web Audio API not supported');
+			}
+			
 			// Tạo nguồn âm thanh
 			const oscillator = context.createOscillator();
 			const gainNode = context.createGain();
@@ -758,41 +906,37 @@ document.addEventListener("DOMContentLoaded", function() {
 			oscillator.connect(gainNode);
 			gainNode.connect(context.destination);
 
-			// Kiểu sóng tạo âm thanh (sine để tạo âm thanh trống)
+			// Kiểu sóng tạo âm thanh
 			oscillator.type = 'sine';
 
-			// Tần số cao cho tiếng ting
-			const tingFrequency = 1500; // Tần số cao cho tiếng ting
+			// Tần số cơ bản cho tiếng gõ cửa (khoảng 100-200Hz)
+			const baseFrequency = 150;
 			
 			// Thời gian bắt đầu
 			const startTime = context.currentTime;
 
-			// Chu kỳ đánh ting
-			const beatDuration = 2; // 0.2 giây mỗi nhịp
-			
 			// Thời gian phát âm thanh tổng cộng
-			const playDuration = 2; // 2 giây
+			const playDuration = 0.5; // 0.5 giây
 
-			// Tạo hiệu ứng tiếng ting bằng cách lặp qua các nhịp
-			for (let i = 0; i < playDuration / beatDuration; i++) {
-				const beatTime = startTime + i * beatDuration;
-				
-				// Đặt tần số cho tiếng ting
-				oscillator.frequency.setValueAtTime(tingFrequency, beatTime);
+			// Tạo hiệu ứng tiếng gõ cửa
+			oscillator.frequency.setValueAtTime(baseFrequency, startTime);
+			oscillator.frequency.setValueAtTime(baseFrequency, startTime + 0.1);
+			oscillator.frequency.setValueAtTime(baseFrequency, startTime + 0.2);
 
-				// Tạo hiệu ứng decay cho mỗi nhịp
-				gainNode.gain.setValueAtTime(1, beatTime);
-				gainNode.gain.exponentialRampToValueAtTime(0.01, beatTime + beatDuration * 0.8);
-			}
+			// Điều chỉnh âm lượng để tạo hiệu ứng gõ cửa
+			gainNode.gain.setValueAtTime(0, startTime);
+			gainNode.gain.linearRampToValueAtTime(1, startTime + 0.01);
+			gainNode.gain.linearRampToValueAtTime(0, startTime + 0.1);
+			gainNode.gain.linearRampToValueAtTime(1, startTime + 0.2);
+			gainNode.gain.linearRampToValueAtTime(0, startTime + 0.3);
 
 			// Bắt đầu và kết thúc âm thanh
 			oscillator.start(startTime);
 			oscillator.stop(startTime + playDuration);
-
-			// Giảm âm lượng dần khi kết thúc
-			gainNode.gain.setValueAtTime(1, startTime);
-			gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + playDuration);
+		} catch (error) {
+			console.error('Error playing sound:', error);
 		}
+	}
 
     // Event delegation for dynamically created rows
     document.addEventListener("click", function(event) {
@@ -801,14 +945,14 @@ document.addEventListener("DOMContentLoaded", function() {
         } else if (event.target.classList.contains("actOrder")) {
             const row = event.target.closest("tr");
             executeOrder({
-					apiKey: apiKeyInput.value,
+                    apiKey: apiKeyInput.value,
                     secretKey: secretKeyInput.value,
                     passphrase: passphraseInput.value,
-                    tdMode: row.cells[3].textContent,
-                    side: row.cells[4].querySelector('select').value,
-                    ordType: row.cells[5].querySelector('select').value,
-                    sz: row.cells[6].textContent,
-                    tgtCcy: row.cells[7].querySelector('select').value
+                    tdMode: row.cells[4].textContent,
+                    side: row.cells[5].querySelector('select').value,
+                    ordType: row.cells[6].querySelector('select').value,
+                    sz: row.cells[7].textContent,
+                    tgtCcy: row.cells[8].querySelector('select').value
             });
         } else if (event.target.classList.contains("delLowRow")) {
             event.target.closest("tr").remove();
@@ -964,6 +1108,41 @@ document.addEventListener("DOMContentLoaded", function() {
     document.addEventListener("click", function(event) {
         if (event.target.classList.contains("delTargetRow")) {
             event.target.closest("tr").remove();
+        }
+    });
+
+    // Sửa phần xử lý sự kiện cho nút Load và input file
+    loadOrderTableButton.addEventListener("click", () => {
+        fileInputOrderTable.value = ''; // Reset giá trị của input file
+        fileInputOrderTable.click();
+    });
+
+    fileInputOrderTable.addEventListener("change", event => {
+        if (event.target.files.length > 0) {
+            loadOrderTable(event.target.files[0]);
+        }
+    });
+
+    // Tương tự cho Low Table và Target Table
+    loadLowTableButton.addEventListener("click", () => {
+        fileInputLowTable.value = ''; // Reset giá trị của input file
+        fileInputLowTable.click();
+    });
+
+    loadTargetTableButton.addEventListener("click", () => {
+        fileInputTargetTable.value = ''; // Reset giá trị của input file
+        fileInputTargetTable.click();
+    });
+
+    fileInputLowTable.addEventListener("change", event => {
+        if (event.target.files.length > 0) {
+            loadLowTable(event.target.files[0]);
+        }
+    });
+
+    fileInputTargetTable.addEventListener("change", event => {
+        if (event.target.files.length > 0) {
+            loadTargetTable(event.target.files[0]);
         }
     });
 });
