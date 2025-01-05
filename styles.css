@@ -8,7 +8,7 @@ body {
     background-color: #f4f4f4;
 }
 
-#layout1,#layout2, #layout3, #layout4, #layout5 {
+#layout1,#layout2, #layout3, #layout4, #layout5, #layout6 {
     margin: 5px;
     padding: 5px;
     background-color: white;
@@ -83,7 +83,7 @@ th {
 }
 
 /* Add this container for horizontal scrolling */
-#layout2, #layout3, #layout4, #layout5 {
+#layout2, #layout3, #layout4, #layout5, #layout6 {
     overflow-x: auto;
     padding: 0;
 }
@@ -95,17 +95,6 @@ th {
     font-size: 12px;
 	width: 20%; /* Cho phép input co giãn theo chiều ngang của cột */
     box-sizing: border-box; /* Đảm bảo padding và border không làm tăng chiều rộng */
-}
-#loadOrderTable, #loadLowTable, #loadTargetTable {
-    width: 25%;
-    padding: 4px;
-    margin: 3px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
 }
 
 /* Custom Alert Styles */
@@ -141,4 +130,68 @@ th {
         opacity: 0;
         transform: translateX(100%);
     }
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    width: 40px;
+    height: 20px;
+    appearance: none;
+    background-color: #ddd;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #007bff;
+}
+
+input[type="checkbox"]::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    position: absolute;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: left 0.3s;
+}
+
+input[type="checkbox"]:checked::before {
+    left: 22px;
+}
+
+/* Reset width for checkboxes in tables */
+table input[type="checkbox"] {
+    width: 40px;
+}
+
+.order-history {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+}
+
+.history-item {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    font-family: monospace;
+}
+
+.history-item:nth-child(odd) {
+    background-color: #f0f0f0;
+}
+
+.history-controls {
+    margin-bottom: 10px;
+}
+
+.history-controls button {
+    margin-right: 10px;
 }
