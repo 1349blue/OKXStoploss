@@ -41,13 +41,15 @@
 		<button id="clearOrderTable">Clear</button>
         <button id="addOrderRow">Add</button>
         <button id="saveAsOrderTable">Save as</button>
-		<input type="file" id="loadOrderTable" accept="application/json" />
+		<button id="loadOrderTable">Load</button>
+		<input type="file" id="fileInputOrderTable" style="display: none;" accept="application/json">
         <table id="orderTable">
             <thead>
                 <tr>
 					<th>Order</th>
 					<th>Logic</th>
                     <th>Target Price</th>
+                    <th>%</th>
                     <th>tdMode</th>
                     <th>Side</th>
                     <th>OrdType</th>
@@ -68,7 +70,12 @@
 		<button id="clearLowTable">Clear</button>
         <button id="addLowRow">Add</button>
 		<button id="saveAsLowTable">Save as</button>
-		<input type="file" id="loadLowTable" accept="application/json" />
+		<button id="loadLowTable">Load</button>
+		<input type="file" id="fileInputLowTable" style="display: none;" accept="application/json">
+        <label style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="changeMin">
+            thay đổi Target Price
+        </label>
         <table id="LowTable">
             <thead>
                 <tr>
@@ -95,7 +102,8 @@
         <button id="clearTargetTable">Clear</button>
         <button id="addTargetRow">Add</button>
         <button id="saveAsTargetTable">Save as</button>
-        <input type="file" id="loadTargetTable" accept="application/json">
+        <button id="loadTargetTable">Load</button>
+        <input type="file" id="fileInputTargetTable" style="display: none;" accept="application/json">
         <table id="targetTable">
             <thead>
                 <tr>
@@ -113,6 +121,18 @@
                 <!-- Data rows will be added here -->
             </tbody>
         </table>
+    </div>
+
+    <!-- Thêm layout mới cho lịch sử giao dịch -->
+    <div id="layout6">
+        <h2>Lịch sử giao dịch</h2>
+        <div class="history-controls">
+            <button id="clearHistory">Xóa lịch sử</button>
+            <button id="saveHistory">Lưu lịch sử</button>
+        </div>
+        <div id="orderHistory" class="order-history">
+            <!-- Lịch sử giao dịch sẽ được thêm vào đây -->
+        </div>
     </div>
 
     <script src="script.js"></script>
