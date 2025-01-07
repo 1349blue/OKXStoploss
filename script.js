@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         if (isTradeEnabled) {
             // Bắt đầu vòng lặp khi enabled = true
-
+            updateTokenPrice();
             priceUpdateTimer = setInterval(() => {
                 updateTokenPrice();
                 checkConditions(); 
@@ -76,6 +76,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 clearInterval(priceUpdateTimer);
                 priceUpdateTimer = null;
             }
+            varTokenPrice = 0;
+            tokenPriceSpan.textContent = varTokenPrice.toFixed(8);
             showAlert("Trading disabled");
         }
     }
@@ -165,66 +167,59 @@ document.addEventListener("DOMContentLoaded", function() {
 		const orderTableBody = document.getElementById("orderTableBody");
 		const row = document.createElement("tr");
 
-		// Define options for the select elements
+		// Define options for all select elements
 		const options0 = ['market', 'limit'];
 		const options1 = ['buy', 'sell'];
 		const options2 = ['base_ccy', 'quote_ccy'];
+		const logicOptions = ['>', '<', '='];  // Thêm options cho logic
 
-		// Create select elements for the 'tgtCcy' columns
+		// Create all select elements
 		const select0 = document.createElement("select");
 		const select1 = document.createElement("select");
 		const select2 = document.createElement("select");
-		
-		// Populate select0 with options1
-		options0.forEach(option => {
-			const opt0 = document.createElement("option");
-			opt0.value = option; // Correctly assign option value
-			opt0.textContent = option; // Correctly assign option display text
-			select0.appendChild(opt0);
+		const logicSelect = document.createElement("select");  // Thêm select cho logic
+
+		// Populate all selects
+		[
+			{ select: select0, options: options0 },
+			{ select: select1, options: options1 },
+			{ select: select2, options: options2 },
+			{ select: logicSelect, options: logicOptions }  // Thêm logic options
+		].forEach(({ select, options }) => {
+			options.forEach(option => {
+				const opt = document.createElement("option");
+				opt.value = option;
+				opt.textContent = option;
+				select.appendChild(opt);
+			});
 		});
 
-		// Populate select1 with options1
-		options1.forEach(option => {
-			const opt1 = document.createElement("option");
-			opt1.value = option; // Correctly assign option value
-			opt1.textContent = option; // Correctly assign option display text
-			select1.appendChild(opt1);
-		});
-
-		// Populate select2 with options2
-		options2.forEach(option => {
-			const opt2 = document.createElement("option");
-			opt2.value = option; // Correctly assign option value
-			opt2.textContent = option; // Correctly assign option display text
-			select2.appendChild(opt2);
-		});
-
-		// Set default value for both selects
+		// Set default values
 		select0.value = 'market';
 		select1.value = 'buy';
 		select2.value = 'base_ccy';
+		logicSelect.value = '>';  // Set default logic value
 
-		// Append the row with the required columns
 		row.innerHTML = `
 			<td contenteditable="true">0</td>
-			<td contenteditable="true"><</td>
+			<td></td>
 			<td contenteditable="true">0</td>
 			<td contenteditable="true">0</td>
 			<td contenteditable="true">cash</td>
-			<td></td> <!-- Placeholder for select side -->
-			<td></td> <!-- Placeholder for select ordType -->
+			<td></td>
+			<td></td>
 			<td contenteditable="true">0</td>
-			<td></td> <!-- Placeholder for select tgtCcy -->
+			<td></td>
 			<td><button class="delOrderRow">Del</button></td>
 			<td><button class="actOrder">Act</button></td>
 		`;
 
-		// Append the select elements to the correct cells
+		// Append all selects
+		row.querySelector("td:nth-child(2)").appendChild(logicSelect);  // Logic select
 		row.querySelector("td:nth-child(6)").appendChild(select1);
 		row.querySelector("td:nth-child(7)").appendChild(select0);
 		row.querySelector("td:nth-child(9)").appendChild(select2);
 
-		// Append the row to the table body
 		orderTableBody.appendChild(row);
 	}
 
@@ -241,30 +236,20 @@ document.addEventListener("DOMContentLoaded", function() {
 	function saveAsOrderTable() {
 		try {
 			const orderTableBody = document.getElementById("orderTableBody");
-			if (!orderTableBody) {
-				throw new Error("Order table body not found");
-			}
-
 			const rows = Array.from(orderTableBody.rows);
 			const orderData = rows.map(row => {
-				try {
-					return {
-						order: parseInt(row.cells[0].textContent) || 0,
-						logic: row.cells[1].textContent || '',
-						targetPrice: parseFloat(row.cells[2].textContent) || 0,
-						percentage: parseFloat(row.cells[3].textContent) || 0,
-						tdMode: row.cells[4].textContent || '',
-						side: row.cells[5].querySelector('select')?.value || 'buy',
-						ordType: row.cells[6].querySelector('select')?.value || 'market', 
-						sz: row.cells[7].textContent || '0',
-						tgtCcy: row.cells[8].querySelector('select')?.value || 'base_ccy'
-					};
-				} catch (err) {
-					console.error("Error parsing row:", err);
-					showAlert("Error parsing table row");
-					return null;
-				}
-			}).filter(item => item !== null);
+				return {
+					order: parseInt(row.cells[0].textContent) || 0,
+					logic: row.cells[1].querySelector('select').value,  // Lấy giá trị từ select
+					targetPrice: parseFloat(row.cells[2].textContent) || 0,
+					percentage: parseFloat(row.cells[3].textContent) || 0,
+					tdMode: row.cells[4].textContent || '',
+					side: row.cells[5].querySelector('select').value,
+					ordType: row.cells[6].querySelector('select').value,
+					sz: row.cells[7].textContent || '0',
+					tgtCcy: row.cells[8].querySelector('select').value
+				};
+			});
 
 			const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(orderData, null, 2));
 			const downloadAnchorNode = document.createElement('a');
@@ -300,12 +285,22 @@ document.addEventListener("DOMContentLoaded", function() {
 					data.forEach(order => {
 						const row = document.createElement("tr");
 						
-						// Create select elements
+						// Create all select elements
 						const sideSelect = document.createElement("select");
 						const ordTypeSelect = document.createElement("select");
 						const tgtCcySelect = document.createElement("select");
+						const logicSelect = document.createElement("select");
 
-						// Add options
+						// Add options for logic
+						['>', '<', '='].forEach(option => {
+							const opt = document.createElement("option");
+							opt.value = option;
+							opt.textContent = option;
+							opt.selected = order.logic === option;
+							logicSelect.appendChild(opt);
+						});
+
+						// Add options for other selects
 						sideSelect.innerHTML = `
 							<option value="buy" ${order.side === 'buy' ? 'selected' : ''}>buy</option>
 							<option value="sell" ${order.side === 'sell' ? 'selected' : ''}>sell</option>
@@ -321,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 						row.innerHTML = `
 							<td contenteditable="true">${order.order || 0}</td>
-							<td contenteditable="true">${order.logic || ''}</td>
+							<td></td>
 							<td contenteditable="true">${order.targetPrice || 0}</td>
 							<td contenteditable="true">${order.percentage || 0}</td>
 							<td contenteditable="true">${order.tdMode || 'cash'}</td>
@@ -333,7 +328,8 @@ document.addEventListener("DOMContentLoaded", function() {
 							<td><button class="actOrder">Act</button></td>
 						`;
 
-						// Append selects
+						// Append all selects
+						row.querySelector("td:nth-child(2)").appendChild(logicSelect);
 						row.querySelector("td:nth-child(6)").appendChild(sideSelect);
 						row.querySelector("td:nth-child(7)").appendChild(ordTypeSelect);
 						row.querySelector("td:nth-child(9)").appendChild(tgtCcySelect);
@@ -367,47 +363,43 @@ document.addEventListener("DOMContentLoaded", function() {
 		for (let i = 0; i < 2; i++) {
 			const row = document.createElement("tr");
 			
-			// Define options for the select elements
+			// Define options for all select elements
 			const options0 = ['market', 'limit'];
 			const options1 = ['buy', 'sell'];
 			const options2 = ['base_ccy', 'quote_ccy'];
+			const logicOptions = ['>', '<', '='];
 
-			// Create select elements
+			// Create all select elements
 			const select0 = document.createElement("select");
 			const select1 = document.createElement("select");
 			const select2 = document.createElement("select");
-			
-			// Populate selects
-			options0.forEach(option => {
-				const opt0 = document.createElement("option");
-				opt0.value = option;
-				opt0.textContent = option;
-				select0.appendChild(opt0);
-			});
+			const logicSelect = document.createElement("select");
 
-			options1.forEach(option => {
-				const opt1 = document.createElement("option");
-				opt1.value = option;
-				opt1.textContent = option;
-				select1.appendChild(opt1);
-			});
-
-			options2.forEach(option => {
-				const opt2 = document.createElement("option");
-				opt2.value = option;
-				opt2.textContent = option;
-				select2.appendChild(opt2);
+			// Populate all selects
+			[
+				{ select: select0, options: options0 },
+				{ select: select1, options: options1 },
+				{ select: select2, options: options2 },
+				{ select: logicSelect, options: logicOptions }
+			].forEach(({ select, options }) => {
+				options.forEach(option => {
+					const opt = document.createElement("option");
+					opt.value = option;
+					opt.textContent = option;
+					select.appendChild(opt);
+				});
 			});
 
 			// Set default values
 			select0.value = 'market';
 			select1.value = 'buy';
 			select2.value = 'base_ccy';
+			logicSelect.value = i === 0 ? '<' : '>';  // Set logic based on row index
 
-			// Append row with the required columns
 			row.innerHTML = `
 				<td contenteditable="true">${-newOrder}</td>
-				<td contenteditable="true">${i === 0 ? '<' : '>'}</td>
+				<td></td>
+				<td contenteditable="true">0</td>
 				<td contenteditable="true">0</td>
 				<td contenteditable="true">cash</td>
 				<td></td>
@@ -418,12 +410,12 @@ document.addEventListener("DOMContentLoaded", function() {
 				<td><button class="actOrder">Act</button></td>
 			`;
 
-			// Append selects to cells
-			row.querySelector("td:nth-child(5)").appendChild(select1);
-			row.querySelector("td:nth-child(6)").appendChild(select0);
-			row.querySelector("td:nth-child(8)").appendChild(select2);
+			// Append all selects
+			row.querySelector("td:nth-child(2)").appendChild(logicSelect);
+			row.querySelector("td:nth-child(6)").appendChild(select1);
+			row.querySelector("td:nth-child(7)").appendChild(select0);
+			row.querySelector("td:nth-child(9)").appendChild(select2);
 
-			// Append row to table body
 			lowTableBody.appendChild(row);
 		}
 	}
@@ -444,11 +436,12 @@ document.addEventListener("DOMContentLoaded", function() {
 				order: parseInt(row.cells[0].textContent),
 				logic: row.cells[1].textContent,
 				targetPrice: parseFloat(row.cells[2].textContent),
-				tdMode: row.cells[3].textContent,
-				side: row.cells[4].querySelector('select') ? row.cells[4].querySelector('select').value : row.cells[4].textContent,  // Lấy giá trị từ select
-				ordType: row.cells[5].querySelector('select') ? row.cells[5].querySelector('select').value : row.cells[5].textContent,  // Lấy giá trị từ select
-				sz: row.cells[6].textContent,
-				tgtCcy: row.cells[7].querySelector('select') ? row.cells[7].querySelector('select').value : row.cells[7].textContent // Lấy giá trị từ select
+				percentage: parseFloat(row.cells[3].textContent),
+				tdMode: row.cells[4].textContent,
+				side: row.cells[5].querySelector('select').value,
+				ordType: row.cells[6].querySelector('select').value,
+				sz: row.cells[7].textContent,
+				tgtCcy: row.cells[8].querySelector('select').value
 			};
 		});
 		const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lowData));
@@ -459,37 +452,115 @@ document.addEventListener("DOMContentLoaded", function() {
 		downloadAnchorNode.click();
 		downloadAnchorNode.remove();
 	}
+    // Save condition table to JSON file with better formatting and error handling
+    function saveAsLowTable() {
+        try {
+            const lowTableBody = document.querySelector("#LowTable tbody");
+            if (!lowTableBody) {
+                throw new Error("Low table body not found");
+            }
+
+            const rows = Array.from(lowTableBody.rows);
+            const lowData = rows.map(row => {
+                return {
+                    order: parseInt(row.cells[0].textContent) || 0,
+                    logic: row.cells[1].querySelector('select')?.value || '',
+                    targetPrice: parseFloat(row.cells[2].textContent) || 0, 
+                    percentage: parseFloat(row.cells[3].textContent) || 0,
+                    tdMode: row.cells[4].textContent || '',
+                    side: row.cells[5].querySelector('select')?.value || '',
+                    ordType: row.cells[6].querySelector('select')?.value || '',
+                    sz: row.cells[7].textContent || '0',
+                    tgtCcy: row.cells[8].querySelector('select')?.value || ''
+                };
+            });
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lowData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "conditions.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showAlert("Low table saved successfully");
+        } catch (err) {
+            console.error("Error saving low table:", err);
+            showAlert("Error saving low table");
+        }
+    }
 
 
     // Load condition table from JSON file
 	function loadLowTable(file) {
 		const reader = new FileReader();
 		reader.onload = function(event) {
-			const data = JSON.parse(event.target.result);
-			const lowTableBody = document.querySelector("#LowTable tbody");
-			lowTableBody.innerHTML = "";
-			data.forEach(condition => {
-				const row = document.createElement("tr");
-				row.innerHTML = `
-					<td contenteditable="true">${condition.order}</td>
-					<td contenteditable="true">${condition.logic}</td>
-					<td contenteditable="true">${condition.targetPrice}</td>
-					<td contenteditable="true">${condition.tdMode}</td>
-					<td></td> <!-- Placeholder for the first select -->
-					<td></td> <!-- Placeholder for the second select -->
-					<td contenteditable="true">${condition.sz}</td>
-					<td></td> <!-- Placeholder for the third select -->
-					<td><button class="delLowRow">Del</button></td>
-					<td><button class="actLow">Act</button></td>
-				`;
+			try {
+				const data = JSON.parse(event.target.result);
+				const lowTableBody = document.querySelector("#LowTable tbody");
+				lowTableBody.innerHTML = "";
+				
+				data.forEach(condition => {
+					const row = document.createElement("tr");
+					
+					// Create all select elements
+					const sideSelect = document.createElement("select");
+					const ordTypeSelect = document.createElement("select");
+					const tgtCcySelect = document.createElement("select");
+					const logicSelect = document.createElement("select");
 
-				// Đặt giá trị cho các select từ dữ liệu đã lưu
-				row.querySelector("td:nth-child(5)").innerHTML = `<select><option value="buy" ${condition.side === 'buy' ? 'selected' : ''}>buy</option><option value="sell" ${condition.side === 'sell' ? 'selected' : ''}>sell</option></select>`;
-				row.querySelector("td:nth-child(6)").innerHTML = `<select><option value="market" ${condition.ordType === 'market' ? 'selected' : ''}>market</option><option value="limit" ${condition.ordType === 'limit' ? 'selected' : ''}>limit</option></select>`;
-				row.querySelector("td:nth-child(8)").innerHTML = `<select><option value="base_ccy" ${condition.tgtCcy === 'base_ccy' ? 'selected' : ''}>base_ccy</option><option value="quote_ccy" ${condition.tgtCcy === 'quote_ccy' ? 'selected' : ''}>quote_ccy</option></select>`;
+					// Add options for logic
+					['>', '<', '='].forEach(option => {
+						const opt = document.createElement("option");
+						opt.value = option;
+						opt.textContent = option;
+						opt.selected = condition.logic === option;
+						logicSelect.appendChild(opt);
+					});
 
-				lowTableBody.appendChild(row);
-			});
+					// Add options for other selects
+					sideSelect.innerHTML = `
+						<option value="buy" ${condition.side === 'buy' ? 'selected' : ''}>buy</option>
+						<option value="sell" ${condition.side === 'sell' ? 'selected' : ''}>sell</option>
+					`;
+					ordTypeSelect.innerHTML = `
+						<option value="market" ${condition.ordType === 'market' ? 'selected' : ''}>market</option>
+						<option value="limit" ${condition.ordType === 'limit' ? 'selected' : ''}>limit</option>
+					`;
+					tgtCcySelect.innerHTML = `
+						<option value="base_ccy" ${condition.tgtCcy === 'base_ccy' ? 'selected' : ''}>base_ccy</option>
+						<option value="quote_ccy" ${condition.tgtCcy === 'quote_ccy' ? 'selected' : ''}>quote_ccy</option>
+					`;
+
+					row.innerHTML = `
+						<td contenteditable="true">${condition.order || 0}</td>
+						<td></td>
+						<td contenteditable="true">${condition.targetPrice || 0}</td>
+						<td contenteditable="true">${condition.percentage || 0}</td>
+						<td contenteditable="true">${condition.tdMode || 'cash'}</td>
+						<td></td>
+						<td></td>
+						<td contenteditable="true">${condition.sz || 0}</td>
+						<td></td>
+						<td><button class="delLowRow">Del</button></td>
+						<td><button class="actLow">Act</button></td>
+					`;
+
+					// Append all selects
+					row.querySelector("td:nth-child(2)").appendChild(logicSelect);
+					row.querySelector("td:nth-child(6)").appendChild(sideSelect);
+					row.querySelector("td:nth-child(7)").appendChild(ordTypeSelect);
+					row.querySelector("td:nth-child(9)").appendChild(tgtCcySelect);
+
+					lowTableBody.appendChild(row);
+				});
+				showAlert("Low table loaded successfully");
+			} catch (err) {
+				console.error("Error loading low table:", err);
+				showAlert("Error loading low table: " + err.message);
+			}
+		};
+		reader.onerror = function() {
+			showAlert("Error reading file");
 		};
 		reader.readAsText(file);
 	}
@@ -539,20 +610,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 .catch(error => showAlert("Error fetching token price: " + error.message));
         }
 
-        // Tiếp tục với code kiểm tra conditions hiện tại
+        // Kiểm tra Order Table
         const orderTableBody = document.getElementById("orderTableBody");
         const orderRows = Array.from(orderTableBody.rows);
         orderRows.forEach(row => {
             const order = parseInt(row.cells[0].textContent);
-            const logic = row.cells[1].textContent;
+            const logic = row.cells[1].querySelector('select').value;
             const targetPrice = parseFloat(row.cells[2].textContent);
-            const percentageValue = parseFloat(row.cells[3].textContent) / 100; // Chuyển % thành số thập phân
+            const percentageValue = parseFloat(row.cells[3].textContent) / 100;
             const realPrice = targetPrice * (1 + percentageValue);
+            
             if (order > 0 && evaluateCondition(logic, realPrice, varTokenPrice)) {
-				//showAlert('lệnh đúng order');
-				//console.log("giá varTokenPrice: ",varTokenPrice); // Kiểm tra xem giá trị đã được thay đổi chưa
-				//thongBaoTaget();
-				
                 executeOrder({
                     apiKey: apiKeyInput.value,
                     secretKey: secretKeyInput.value,
@@ -563,35 +631,36 @@ document.addEventListener("DOMContentLoaded", function() {
                     sz: row.cells[7].textContent,
                     tgtCcy: row.cells[8].querySelector('select').value
                 });
-				
-                updateOrderStatus(row,orderTableBody);
+                updateOrderStatus(row, orderTableBody);
             }
         });
 
+        // Kiểm tra Low Table
         const lowTableBody = document.querySelector("#LowTable tbody");
         const lowRows = Array.from(lowTableBody.rows);
-		
+        
         for (const row of lowRows) {
             const order = parseInt(row.cells[0].textContent);
-            const logic = row.cells[1].textContent;
+            const logic = row.cells[1].querySelector('select').value;
             const targetPrice = parseFloat(row.cells[2].textContent);
-			if (order > 0 && evaluateCondition(logic, targetPrice, varTokenPrice)) {
-				//thongBaoTaget();
-				if (row.cells[4].querySelector('select').value === 'sell') {
+            const percentageValue = parseFloat(row.cells[3].textContent) / 100;
+            const realPrice = targetPrice * (1 + percentageValue);
+            
+            if (order > 0 && evaluateCondition(logic, realPrice, varTokenPrice)) {
+				thongBaoTaget();
+				if (row.cells[5].querySelector('select').value === 'sell') {
 					try {
 						const balance = await getTokenBalance();
 						if (balance > 0) {
-							console.log(balance);
-							
 							executeOrder({
 								apiKey: apiKeyInput.value,
 								secretKey: secretKeyInput.value,
 								passphrase: passphraseInput.value,
-								tdMode: row.cells[3].textContent,
-								side: row.cells[4].querySelector('select').value,
-								ordType: row.cells[5].querySelector('select').value,
+								tdMode: row.cells[4].textContent,
+								side: row.cells[5].querySelector('select').value,
+								ordType: row.cells[6].querySelector('select').value,
 								sz: balance,
-								tgtCcy: row.cells[7].querySelector('select').value
+								tgtCcy: row.cells[8].querySelector('select').value
 							});
 							
 						} else {
@@ -606,11 +675,11 @@ document.addEventListener("DOMContentLoaded", function() {
 						apiKey: apiKeyInput.value,
 						secretKey: secretKeyInput.value,
 						passphrase: passphraseInput.value,
-						tdMode: row.cells[3].textContent,
-						side: row.cells[4].querySelector('select').value,
-						ordType: row.cells[5].querySelector('select').value,
-						sz: row.cells[6].textContent,
-						tgtCcy: row.cells[7].querySelector('select').value
+						tdMode: row.cells[4].textContent,
+						side: row.cells[5].querySelector('select').value,
+						ordType: row.cells[6].querySelector('select').value,
+						sz: row.cells[7].textContent,
+						tgtCcy: row.cells[8].querySelector('select').value
 					});
 					
 				}
@@ -626,33 +695,79 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     }
 	function updateOrderStatus(row, TableBody) {
-        // Lấy giá trị order từ cột đầu tiên và chuyển thành số
-        const order = parseInt(row.cells[0].textContent);
-        
-        // Kiểm tra nếu order không phải là số hợp lệ
-        if (isNaN(order)) {
-            console.error("Invalid order value");
-            return;
+        try {
+            // Kiểm tra tham số đầu vào
+            if (!row || !TableBody) {
+                console.error("Missing parameters:", { row, TableBody });
+                return;
+            }
+
+            // Debug thông tin row
+            console.log("Current row:", {
+                rowContent: row.innerHTML,
+                firstCell: row.cells[0]?.textContent
+            });
+
+            // Lấy và kiểm tra order value
+            const order = parseInt(row.cells[0]?.textContent);
+            if (isNaN(order)) {
+                console.error("Invalid order value:", row.cells[0]?.textContent);
+                return;
+            }
+            console.log("Processing order:", order);
+
+            // Kiểm tra TableBody
+            if (!TableBody.rows) {
+                console.error("Invalid TableBody:", TableBody);
+                return;
+            }
+
+            // Tìm các hàng có order ngược dấu
+            const opposingOrders = Array.from(TableBody.rows).filter(r => {
+                if (!r.cells[0]) {
+                    console.warn("Row missing first cell:", r);
+                    return false;
+                }
+                const opposingOrder = parseInt(r.cells[0].textContent);
+                const isOpposing = !isNaN(opposingOrder) && opposingOrder === -order;
+                if (isOpposing) {
+                    console.log("Found opposing order:", opposingOrder);
+                }
+                return isOpposing;
+            });
+
+            // Cập nhật các order ngược dấu
+            opposingOrders.forEach(r => {
+                try {
+                    const currentOrder = parseInt(r.cells[0].textContent);
+                    const newValue = Math.abs(currentOrder);
+                    r.cells[0].textContent = newValue; // Sử dụng textContent thay vì innerHTML
+                    console.log("Updated opposing order:", {
+                        from: currentOrder,
+                        to: newValue,
+                        cell: r.cells[0]
+                    });
+                } catch (err) {
+                    console.error("Error updating opposing order:", err);
+                }
+            });
+
+            // Cập nhật order hiện tại
+            const newValue = -order;
+            row.cells[0].textContent = newValue; // Sử dụng textContent thay vì innerHTML
+            console.log("Updated current order:", {
+                from: order,
+                to: newValue,
+                cell: row.cells[0]
+            });
+
+            // Thông báo hoàn thành
+            showAlert("Orders updated successfully");
+
+        } catch (err) {
+            console.error("Error in updateOrderStatus:", err);
+            showAlert("Error updating orders: " + err.message);
         }
-
-        // Tìm các hàng có order ngược dấu
-        const opposingOrders = Array.from(TableBody.rows).filter(r => {
-            const opposingOrder = parseInt(r.cells[0].textContent);
-            return !isNaN(opposingOrder) && opposingOrder === -order;
-        });
-
-        // Cập nhật giá trị các order ngược dấu thành dương và cập nhật DOM
-        opposingOrders.forEach(r => {
-            const currentOrder = parseInt(r.cells[0].textContent);
-            const newValue = Math.abs(currentOrder);
-            r.cells[0].innerHTML = newValue; // Sử dụng innerHTML để cập nhật DOM
-            console.log("Updated opposing order from", currentOrder, "to", newValue);
-        });
-        
-        // Đổi dấu order hiện tại thành âm và cập nhật DOM
-        const newValue = -order;
-        row.cells[0].innerHTML = newValue; // Sử dụng innerHTML để cập nhật DOM
-        console.log("Updated current order from", order, "to", newValue);
     }
 
     function updateTargetPrice(row) {
@@ -668,6 +783,7 @@ document.addEventListener("DOMContentLoaded", function() {
             case "=":
                 return currentPrice === targetPrice;
             default:
+                console.error("Invalid logic operator:", logic);
                 return false;
         }
     }
@@ -860,11 +976,13 @@ document.addEventListener("DOMContentLoaded", function() {
         const newInterval = parseInt(intervalInput.value);
         if (!isNaN(newInterval) && newInterval > 0) {
             updateInterval = newInterval;
+            /*
             clearInterval(priceUpdateTimer);
             priceUpdateTimer = setInterval(() => {
                 updateTokenPrice();
                 checkConditions();
             }, updateInterval);
+            */
             showAlert("Update interval changed to " + newInterval + "ms");
         } else {
             showAlert("Please enter a valid interval");
@@ -962,11 +1080,11 @@ document.addEventListener("DOMContentLoaded", function() {
 					apiKey: apiKeyInput.value,
                     secretKey: secretKeyInput.value,
                     passphrase: passphraseInput.value,
-                    tdMode: row.cells[3].textContent,
-                    side: row.cells[4].querySelector('select').value,
-                    ordType: row.cells[5].querySelector('select').value,
-                    sz: row.cells[6].textContent,
-                    tgtCcy: row.cells[7].querySelector('select').value
+                    tdMode: row.cells[4].textContent,
+                    side: row.cells[5].querySelector('select').value,
+                    ordType: row.cells[6].querySelector('select').value,
+                    sz: row.cells[7].textContent,
+                    tgtCcy: row.cells[8].querySelector('select').value
             });
         }
     });
