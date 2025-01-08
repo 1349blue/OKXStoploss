@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function() {
-	
 	//đăng ký Service Worker:
 	if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -13,7 +12,6 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     });
 	}
-	
     const apiKeyInput = document.getElementById("apiKey");
     const secretKeyInput = document.getElementById("secretKey");
     const passphraseInput = document.getElementById("passphrase");
@@ -139,26 +137,59 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Fetch and update token price
 	async function updateTokenPrice() {
-		tokenName = tokenNameInput.value.trim().toUpperCase();  // Chuyển đổi thành chữ hoa và loại bỏ khoảng trắng
+		tokenName = tokenNameInput.value.trim().toUpperCase();
 		if (!tokenName) {
-			showAlert("Please enter a valid token name");
+			showAlert("Vui lòng nhập tên token hợp lệ");
 			return;
 		}
 
-		const url = `https://api.binance.com/api/v3/ticker/price?symbol=${tokenName}USDT`;
+		// Danh sách các API để thử
+		const apis = [
+			{
+				name: 'Binance',
+				url: `https://api.binance.com/api/v3/ticker/price?symbol=${tokenName}USDTa`,
+				processResponse: (data) => parseFloat(data.price)
+			},
+			{
+				name: 'OKX',
+				url: `https://www.okx.com/api/v5/market/ticker?instId=${tokenName}-USDTa`,
+				processResponse: (data) => parseFloat(data.data[0].last)
+			},
+			{
+				name: 'Huobi',
+				url: `https://api.huobi.pro/market/detail/merged?symbol=${tokenName.toLowerCase()}usdt`,
+				processResponse: (data) => parseFloat(data.tick.close)
+			}
+		];
 
-		fetch(url)
-			.then(response => {
+		// Thử lần lượt t�ng API
+		for (const api of apis) {
+			try {
+				const response = await fetch(api.url);
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`);
 				}
-				return response.json();
-			})
-			.then(data => {
-				varTokenPrice = parseFloat(data.price);
-				tokenPriceSpan.textContent = varTokenPrice.toFixed(8); // Hiển thị giá với 2 chữ số thập phân
-			})
-			.catch(error => showAlert("Error fetching token price: " + error.message));
+				
+				const data = await response.json();
+				varTokenPrice = api.processResponse(data);
+				
+				if (varTokenPrice && !isNaN(varTokenPrice)) {
+					tokenPriceSpan.textContent = varTokenPrice.toFixed(8);
+					console.log(`Giá được lấy từ ${api.name}`);
+					return; // Thoát khỏi hàm n�u lấy giá thành công
+				}
+				
+				throw new Error('Giá không hợp lệ');
+				
+			} catch (error) {
+				console.warn(`Lỗi khi lấy giá từ ${api.name}:`, error.message);
+				// Tiếp tục với API ti�p theo nếu có lỗi
+				continue;
+			}
+		}
+
+		// Nếu tất cả API đều thất bại
+		showAlert("Không thể lấy giá token từ tất cả các nguồn");
 	}
 
 
@@ -787,7 +818,19 @@ document.addEventListener("DOMContentLoaded", function() {
                 return false;
         }
     }
-
+    /*
+    async function executeOrder(order) {
+        const timestamp = new Date().toISOString();
+        addToHistory({
+            timestamp: new Date().toLocaleString(),
+            type: order.side,
+            price: varTokenPrice,
+            amount: order.sz,
+            token: tokenName,
+            status: 'Thành công'
+        });
+    }
+    */
     async function executeOrder(order) {
         const apiUrl = 'https://www.okx.com';
 
