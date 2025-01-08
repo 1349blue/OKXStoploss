@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
+	
 	//đăng ký Service Worker:
 	if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -12,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     });
 	}
+	
     const apiKeyInput = document.getElementById("apiKey");
     const secretKeyInput = document.getElementById("secretKey");
     const passphraseInput = document.getElementById("passphrase");
@@ -147,12 +149,12 @@ document.addEventListener("DOMContentLoaded", function() {
 		const apis = [
 			{
 				name: 'Binance',
-				url: `https://api.binance.com/api/v3/ticker/price?symbol=${tokenName}USDTa`,
+				url: `https://api.binance.com/api/v3/ticker/price?symbol=${tokenName}USDT`,
 				processResponse: (data) => parseFloat(data.price)
 			},
 			{
 				name: 'OKX',
-				url: `https://www.okx.com/api/v5/market/ticker?instId=${tokenName}-USDTa`,
+				url: `https://www.okx.com/api/v5/market/ticker?instId=${tokenName}-USDT`,
 				processResponse: (data) => parseFloat(data.data[0].last)
 			},
 			{
